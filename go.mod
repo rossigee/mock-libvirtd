@@ -1,6 +1,6 @@
 module github.com/rossigee/mock-libvirtd
 
-go 1.26
+go 1.26.4
 
 require (
 	github.com/gin-gonic/gin v1.10.0
