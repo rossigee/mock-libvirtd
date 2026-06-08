@@ -1,3 +1,4 @@
+//nolint:errcheck,dupl // Mock service ignores UUID and JSON unmarshal errors; similar CRUD handlers across storage types
 package handler
 
 import (
