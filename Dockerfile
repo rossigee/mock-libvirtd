@@ -5,7 +5,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.12.2
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b /usr/local/bin v2.12.2
 RUN golangci-lint run ./...
 
 RUN go test -v -race -coverprofile=coverage.out ./...
