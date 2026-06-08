@@ -53,7 +53,7 @@ jobs:
           push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) }}
           tags: |
             ${{ env.REGISTRY }}/rossigee/mock-libvirtd:latest
-            ${{ env.REGISTRY }}/mock-libvirtd:${{ github.sha }}
+            ${{ env.REGISTRY }}/rossigee/mock-libvirtd:${{ github.sha }}
             ${{ startsWith(github.ref, 'refs/tags/v') && format('{0}/rossigee/mock-libvirtd:{1}', env.REGISTRY, github.ref_name) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
