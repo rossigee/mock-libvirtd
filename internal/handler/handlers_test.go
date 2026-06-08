@@ -112,7 +112,9 @@ func TestDomainCreateDefaults(t *testing.T) {
 	h.Create(c)
 
 	var domain Domain
-	json.Unmarshal(w.Body.Bytes(), &domain)
+	if err := json.Unmarshal(w.Body.Bytes(), &domain); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if domain.Memory != 512 {
 		t.Fatalf("expected default memory 512, got %d", domain.Memory)
@@ -138,7 +140,9 @@ func TestDomainGet(t *testing.T) {
 	h.Create(c1)
 
 	var domain Domain
-	json.Unmarshal(w1.Body.Bytes(), &domain)
+	if err := json.Unmarshal(w1.Body.Bytes(), &domain); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("GET", "/api/domains/"+domain.ID, nil)
@@ -154,7 +158,9 @@ func TestDomainGet(t *testing.T) {
 	}
 
 	var retrieved Domain
-	json.Unmarshal(w2.Body.Bytes(), &retrieved)
+	if err := json.Unmarshal(w2.Body.Bytes(), &retrieved); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if retrieved.ID != domain.ID {
 		t.Fatalf("expected ID %s, got %s", domain.ID, retrieved.ID)
@@ -195,7 +201,9 @@ func TestDomainUpdate(t *testing.T) {
 	h.Create(c1)
 
 	var domain Domain
-	json.Unmarshal(w1.Body.Bytes(), &domain)
+	if err := json.Unmarshal(w1.Body.Bytes(), &domain); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	updateReq := struct {
 		State string `json:"state"`
@@ -215,7 +223,9 @@ func TestDomainUpdate(t *testing.T) {
 	}
 
 	var updated Domain
-	json.Unmarshal(w2.Body.Bytes(), &updated)
+	if err := json.Unmarshal(w2.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if updated.State != "running" {
 		t.Fatalf("expected state running, got %s", updated.State)
@@ -260,7 +270,9 @@ func TestDomainDelete(t *testing.T) {
 	h.Create(c1)
 
 	var domain Domain
-	json.Unmarshal(w1.Body.Bytes(), &domain)
+	if err := json.Unmarshal(w1.Body.Bytes(), &domain); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("DELETE", "/api/domains/"+domain.ID, nil)
@@ -383,7 +395,9 @@ func TestNetworkCreate(t *testing.T) {
 	}
 
 	var network Network
-	json.Unmarshal(w.Body.Bytes(), &network)
+	if err := json.Unmarshal(w.Body.Bytes(), &network); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if network.Name != req.Name {
 		t.Fatalf("expected name %s, got %s", req.Name, network.Name)
@@ -408,7 +422,9 @@ func TestNetworkCreateDefaults(t *testing.T) {
 	h.Create(c)
 
 	var network Network
-	json.Unmarshal(w.Body.Bytes(), &network)
+	if err := json.Unmarshal(w.Body.Bytes(), &network); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if network.Bridge != "virbr0" {
 		t.Fatalf("expected default bridge virbr0, got %s", network.Bridge)
@@ -431,7 +447,9 @@ func TestNetworkGet(t *testing.T) {
 	h.Create(c1)
 
 	var network Network
-	json.Unmarshal(w1.Body.Bytes(), &network)
+	if err := json.Unmarshal(w1.Body.Bytes(), &network); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("GET", "/api/networks/"+network.ID, nil)
@@ -481,7 +499,9 @@ func TestNetworkDelete(t *testing.T) {
 	h.Create(c1)
 
 	var network Network
-	json.Unmarshal(w1.Body.Bytes(), &network)
+	if err := json.Unmarshal(w1.Body.Bytes(), &network); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("DELETE", "/api/networks/"+network.ID, nil)
@@ -572,7 +592,9 @@ func TestStorageCreate(t *testing.T) {
 	}
 
 	var pool StoragePool
-	json.Unmarshal(w.Body.Bytes(), &pool)
+	if err := json.Unmarshal(w.Body.Bytes(), &pool); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if pool.Name != req.Name {
 		t.Fatalf("expected name %s, got %s", req.Name, pool.Name)
@@ -597,7 +619,9 @@ func TestStorageCreateDefaults(t *testing.T) {
 	h.Create(c)
 
 	var pool StoragePool
-	json.Unmarshal(w.Body.Bytes(), &pool)
+	if err := json.Unmarshal(w.Body.Bytes(), &pool); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	if pool.Type != "dir" {
 		t.Fatalf("expected default type dir, got %s", pool.Type)
@@ -623,7 +647,9 @@ func TestStorageGet(t *testing.T) {
 	h.Create(c1)
 
 	var pool StoragePool
-	json.Unmarshal(w1.Body.Bytes(), &pool)
+	if err := json.Unmarshal(w1.Body.Bytes(), &pool); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("GET", "/api/storage/"+pool.ID, nil)
@@ -673,7 +699,9 @@ func TestStorageDelete(t *testing.T) {
 	h.Create(c1)
 
 	var pool StoragePool
-	json.Unmarshal(w1.Body.Bytes(), &pool)
+	if err := json.Unmarshal(w1.Body.Bytes(), &pool); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
 
 	w2 := httptest.NewRecorder()
 	r2, _ := http.NewRequest("DELETE", "/api/storage/"+pool.ID, nil)
