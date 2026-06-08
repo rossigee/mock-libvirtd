@@ -748,3 +748,126 @@ func TestStorageDeleteNotFound(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, w.Code)
 	}
 }
+
+// ============================================================
+// VOLUME HANDLER TESTS
+// ============================================================
+
+func TestVolumeList(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/storage/pool-123/volumes", nil)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = []gin.Param{{Key: "pool_id", Value: "pool-123"}}
+	c.Set("request_id", "test-123")
+
+	h := NewVolumeHandler()
+	h.List(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+}
+
+func TestVolumeCreate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewVolumeHandler()
+
+	req := struct {
+		Name string `json:"name"`
+		Size int64  `json:"size"`
+	}{Name: "disk.qcow2", Size: 10737418240}
+
+	body, _ := json.Marshal(req)
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("POST", "/api/storage/pool-123/volumes", bytes.NewBuffer(body))
+	c, _ := gin.CreateTestContext(w)
+	c.Request = r
+	c.Params = []gin.Param{{Key: "pool_id", Value: "pool-123"}}
+	c.Set("request_id", "test-123")
+
+	h.Create(c)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d", http.StatusCreated, w.Code)
+	}
+}
+
+func TestVolumeGet(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewVolumeHandler()
+
+	createReq := struct {
+		Name string `json:"name"`
+		Size int64  `json:"size"`
+	}{Name: "disk.qcow2", Size: 10737418240}
+	body, _ := json.Marshal(createReq)
+	w1 := httptest.NewRecorder()
+	r1, _ := http.NewRequest("POST", "/api/storage/pool-123/volumes", bytes.NewBuffer(body))
+	c1, _ := gin.CreateTestContext(w1)
+	c1.Request = r1
+	c1.Params = []gin.Param{{Key: "pool_id", Value: "pool-123"}}
+	c1.Set("request_id", "test-123")
+	h.Create(c1)
+
+	var volume StorageVolume
+	if err := json.Unmarshal(w1.Body.Bytes(), &volume); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	w2 := httptest.NewRecorder()
+	r2, _ := http.NewRequest("GET", "/api/storage/pool-123/volumes/"+volume.ID, nil)
+	c2, _ := gin.CreateTestContext(w2)
+	c2.Request = r2
+	c2.Params = []gin.Param{
+		{Key: "pool_id", Value: "pool-123"},
+		{Key: "volume_id", Value: volume.ID},
+	}
+	c2.Set("request_id", "test-123")
+
+	h.Get(c2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, w2.Code)
+	}
+}
+
+func TestVolumeDelete(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewVolumeHandler()
+
+	createReq := struct {
+		Name string `json:"name"`
+		Size int64  `json:"size"`
+	}{Name: "disk.qcow2", Size: 10737418240}
+	body, _ := json.Marshal(createReq)
+	w1 := httptest.NewRecorder()
+	r1, _ := http.NewRequest("POST", "/api/storage/pool-123/volumes", bytes.NewBuffer(body))
+	c1, _ := gin.CreateTestContext(w1)
+	c1.Request = r1
+	c1.Params = []gin.Param{{Key: "pool_id", Value: "pool-123"}}
+	c1.Set("request_id", "test-123")
+	h.Create(c1)
+
+	var volume StorageVolume
+	if err := json.Unmarshal(w1.Body.Bytes(), &volume); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	w2 := httptest.NewRecorder()
+	r2, _ := http.NewRequest("DELETE", "/api/storage/pool-123/volumes/"+volume.ID, nil)
+	c2, _ := gin.CreateTestContext(w2)
+	c2.Request = r2
+	c2.Params = []gin.Param{
+		{Key: "pool_id", Value: "pool-123"},
+		{Key: "volume_id", Value: volume.ID},
+	}
+	c2.Set("request_id", "test-123")
+
+	h.Delete(c2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, w2.Code)
+	}
+}

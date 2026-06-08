@@ -32,7 +32,6 @@ spec:
       containers:
       - name: mock-libvirtd
         image: mock-libvirtd:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 8080
           name: http

@@ -80,6 +80,12 @@ func main() {
 		api.POST("/storage", storage.Create)
 		api.GET("/storage/:id", storage.Get)
 		api.DELETE("/storage/:id", storage.Delete)
+
+		volumes := handler.NewVolumeHandler()
+		api.GET("/storage/:pool_id/volumes", volumes.List)
+		api.POST("/storage/:pool_id/volumes", volumes.Create)
+		api.GET("/storage/:pool_id/volumes/:volume_id", volumes.Get)
+		api.DELETE("/storage/:pool_id/volumes/:volume_id", volumes.Delete)
 	}
 
 	// Start server
