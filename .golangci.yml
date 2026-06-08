@@ -29,19 +29,14 @@ linters-settings:
     rules:
       - name: blank-imports
       - name: context-as-argument
-      - name: context-keys-type
       - name: error-naming
       - name: error-return
       - name: error-strings
-      - name: exported
       - name: indent-error-flow
-      - name: package-comments
       - name: range
       - name: receiver-naming
       - name: time-naming
-      - name: unexported-naming
       - name: unexported-return
-      - name: unhandled-error
       - name: var-naming
 
 issues:

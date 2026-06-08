@@ -10,13 +10,13 @@ import (
 )
 
 type StorageVolume struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	PoolID   string `json:"pool_id"`
-	Type     string `json:"type"`
-	Size     int64  `json:"size"`
-	Path     string `json:"path"`
-	Format   string `json:"format"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	PoolID       string `json:"pool_id"`
+	Type         string `json:"type"`
+	Size         int64  `json:"size"`
+	Path         string `json:"path"`
+	Format       string `json:"format"`
 	BackingStore string `json:"backing_store,omitempty"`
 }
 
@@ -60,10 +60,10 @@ func (h *VolumeHandler) Create(c *gin.Context) {
 	poolID := c.Param("pool_id")
 
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Type        string `json:"type"`
-		Size        int64  `json:"size" binding:"required"`
-		Format      string `json:"format"`
+		Name         string `json:"name" binding:"required"`
+		Type         string `json:"type"`
+		Size         int64  `json:"size" binding:"required"`
+		Format       string `json:"format"`
 		BackingStore string `json:"backing_store"`
 	}
 
