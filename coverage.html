@@ -1,0 +1,664 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>handler: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/rossigee/mock-libvirtd/internal/handler/domains.go (26.8%)</option>
+				
+				<option value="file1">github.com/rossigee/mock-libvirtd/internal/handler/health.go (0.0%)</option>
+				
+				<option value="file2">github.com/rossigee/mock-libvirtd/internal/handler/networks.go (17.4%)</option>
+				
+				<option value="file3">github.com/rossigee/mock-libvirtd/internal/handler/storage.go (16.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package handler
+
+import (
+        "log/slog"
+        "net/http"
+        "sync"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+)
+
+type Domain struct {
+        ID     string `json:"id"`
+        Name   string `json:"name"`
+        State  string `json:"state"`
+        Memory int    `json:"memory"`
+        CPUs   int    `json:"cpus"`
+}
+
+type DomainHandler struct {
+        domains map[string]*Domain
+        mu      sync.RWMutex
+}
+
+func NewDomainHandler() *DomainHandler <span class="cov10" title="2">{
+        return &amp;DomainHandler{
+                domains: make(map[string]*Domain),
+        }
+}</span>
+
+func (h *DomainHandler) List(c *gin.Context) <span class="cov1" title="1">{
+        requestID, _ := c.Get("request_id")
+        h.mu.RLock()
+        domains := make([]*Domain, 0, len(h.domains))
+        for _, d := range h.domains </span><span class="cov0" title="0">{
+                domains = append(domains, d)
+        }</span>
+        <span class="cov1" title="1">h.mu.RUnlock()
+
+        slog.InfoContext(c.Request.Context(), "listed domains",
+                slog.String("request_id", requestID.(string)),
+                slog.Int("count", len(domains)),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "data": domains,
+        })</span>
+}
+
+func (h *DomainHandler) Create(c *gin.Context) <span class="cov1" title="1">{
+        requestID, _ := c.Get("request_id")
+        var req struct {
+                Name   string `json:"name" binding:"required"`
+                Memory int    `json:"memory"`
+                CPUs   int    `json:"cpus"`
+        }
+
+        if err := c.BindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "invalid domain creation request",
+                        slog.String("request_id", requestID.(string)),
+                        slog.Any("error", err),
+                )
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "error":      "invalid request",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov1" title="1">if req.Memory == 0 </span><span class="cov0" title="0">{
+                req.Memory = 512
+        }</span>
+        <span class="cov1" title="1">if req.CPUs == 0 </span><span class="cov0" title="0">{
+                req.CPUs = 1
+        }</span>
+
+        <span class="cov1" title="1">domain := &amp;Domain{
+                ID:     uuid.New().String(),
+                Name:   req.Name,
+                State:  "shutoff",
+                Memory: req.Memory,
+                CPUs:   req.CPUs,
+        }
+
+        h.mu.Lock()
+        h.domains[domain.ID] = domain
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "created domain",
+                slog.String("request_id", requestID.(string)),
+                slog.String("domain_id", domain.ID),
+                slog.String("name", domain.Name),
+        )
+
+        c.JSON(http.StatusCreated, domain)</span>
+}
+
+func (h *DomainHandler) Get(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.RLock()
+        domain, exists := h.domains[id]
+        h.mu.RUnlock()
+
+        if !exists </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "domain not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("domain_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "domain not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, domain)</span>
+}
+
+func (h *DomainHandler) Update(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        var req struct {
+                State  string `json:"state"`
+                Memory int    `json:"memory"`
+                CPUs   int    `json:"cpus"`
+        }
+
+        if err := c.BindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "invalid domain update request",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("domain_id", id),
+                        slog.Any("error", err),
+                )
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "error":      "invalid request",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.mu.Lock()
+        domain, exists := h.domains[id]
+        if !exists </span><span class="cov0" title="0">{
+                h.mu.Unlock()
+                slog.WarnContext(c.Request.Context(), "domain not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("domain_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "domain not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">if req.State != "" </span><span class="cov0" title="0">{
+                domain.State = req.State
+        }</span>
+        <span class="cov0" title="0">if req.Memory &gt; 0 </span><span class="cov0" title="0">{
+                domain.Memory = req.Memory
+        }</span>
+        <span class="cov0" title="0">if req.CPUs &gt; 0 </span><span class="cov0" title="0">{
+                domain.CPUs = req.CPUs
+        }</span>
+        <span class="cov0" title="0">h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "updated domain",
+                slog.String("request_id", requestID.(string)),
+                slog.String("domain_id", id),
+        )
+
+        c.JSON(http.StatusOK, domain)</span>
+}
+
+func (h *DomainHandler) Delete(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.Lock()
+        _, exists := h.domains[id]
+        if !exists </span><span class="cov0" title="0">{
+                h.mu.Unlock()
+                slog.WarnContext(c.Request.Context(), "domain not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("domain_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "domain not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+        <span class="cov0" title="0">delete(h.domains, id)
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "deleted domain",
+                slog.String("request_id", requestID.(string)),
+                slog.String("domain_id", id),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "message": "domain deleted",
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package handler
+
+import (
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type HealthHandler struct {
+        ready bool
+}
+
+func NewHealthHandler() *HealthHandler <span class="cov0" title="0">{
+        return &amp;HealthHandler{ready: true}
+}</span>
+
+func (h *HealthHandler) Health(c *gin.Context) <span class="cov0" title="0">{
+        c.JSON(http.StatusOK, gin.H{
+                "status": "alive",
+        })
+}</span>
+
+func (h *HealthHandler) Ready(c *gin.Context) <span class="cov0" title="0">{
+        if !h.ready </span><span class="cov0" title="0">{
+                c.JSON(http.StatusServiceUnavailable, gin.H{
+                        "status": "not ready",
+                })
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{
+                "status": "ready",
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handler
+
+import (
+        "log/slog"
+        "net/http"
+        "sync"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+)
+
+type Network struct {
+        ID     string `json:"id"`
+        Name   string `json:"name"`
+        Bridge string `json:"bridge"`
+        Active bool   `json:"active"`
+}
+
+type NetworkHandler struct {
+        networks map[string]*Network
+        mu       sync.RWMutex
+}
+
+func NewNetworkHandler() *NetworkHandler <span class="cov8" title="1">{
+        return &amp;NetworkHandler{
+                networks: make(map[string]*Network),
+        }
+}</span>
+
+func (h *NetworkHandler) List(c *gin.Context) <span class="cov8" title="1">{
+        requestID, _ := c.Get("request_id")
+        h.mu.RLock()
+        networks := make([]*Network, 0, len(h.networks))
+        for _, n := range h.networks </span><span class="cov0" title="0">{
+                networks = append(networks, n)
+        }</span>
+        <span class="cov8" title="1">h.mu.RUnlock()
+
+        slog.InfoContext(c.Request.Context(), "listed networks",
+                slog.String("request_id", requestID.(string)),
+                slog.Int("count", len(networks)),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "data": networks,
+        })</span>
+}
+
+func (h *NetworkHandler) Create(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        var req struct {
+                Name   string `json:"name" binding:"required"`
+                Bridge string `json:"bridge"`
+        }
+
+        if err := c.BindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "invalid network creation request",
+                        slog.String("request_id", requestID.(string)),
+                        slog.Any("error", err),
+                )
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "error":      "invalid request",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">if req.Bridge == "" </span><span class="cov0" title="0">{
+                req.Bridge = "virbr0"
+        }</span>
+
+        <span class="cov0" title="0">network := &amp;Network{
+                ID:     uuid.New().String(),
+                Name:   req.Name,
+                Bridge: req.Bridge,
+                Active: true,
+        }
+
+        h.mu.Lock()
+        h.networks[network.ID] = network
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "created network",
+                slog.String("request_id", requestID.(string)),
+                slog.String("network_id", network.ID),
+                slog.String("name", network.Name),
+        )
+
+        c.JSON(http.StatusCreated, network)</span>
+}
+
+func (h *NetworkHandler) Get(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.RLock()
+        network, exists := h.networks[id]
+        h.mu.RUnlock()
+
+        if !exists </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "network not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("network_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "network not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, network)</span>
+}
+
+func (h *NetworkHandler) Delete(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.Lock()
+        _, exists := h.networks[id]
+        if !exists </span><span class="cov0" title="0">{
+                h.mu.Unlock()
+                slog.WarnContext(c.Request.Context(), "network not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("network_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "network not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+        <span class="cov0" title="0">delete(h.networks, id)
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "deleted network",
+                slog.String("request_id", requestID.(string)),
+                slog.String("network_id", id),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "message": "network deleted",
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handler
+
+import (
+        "log/slog"
+        "net/http"
+        "sync"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+)
+
+type StoragePool struct {
+        ID       string `json:"id"`
+        Name     string `json:"name"`
+        Type     string `json:"type"`
+        Path     string `json:"path"`
+        Active   bool   `json:"active"`
+        Capacity int64  `json:"capacity"`
+}
+
+type StorageHandler struct {
+        pools map[string]*StoragePool
+        mu    sync.RWMutex
+}
+
+func NewStorageHandler() *StorageHandler <span class="cov8" title="1">{
+        return &amp;StorageHandler{
+                pools: make(map[string]*StoragePool),
+        }
+}</span>
+
+func (h *StorageHandler) List(c *gin.Context) <span class="cov8" title="1">{
+        requestID, _ := c.Get("request_id")
+        h.mu.RLock()
+        pools := make([]*StoragePool, 0, len(h.pools))
+        for _, p := range h.pools </span><span class="cov0" title="0">{
+                pools = append(pools, p)
+        }</span>
+        <span class="cov8" title="1">h.mu.RUnlock()
+
+        slog.InfoContext(c.Request.Context(), "listed storage pools",
+                slog.String("request_id", requestID.(string)),
+                slog.Int("count", len(pools)),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "data": pools,
+        })</span>
+}
+
+func (h *StorageHandler) Create(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        var req struct {
+                Name     string `json:"name" binding:"required"`
+                Type     string `json:"type"`
+                Path     string `json:"path"`
+                Capacity int64  `json:"capacity"`
+        }
+
+        if err := c.BindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "invalid storage creation request",
+                        slog.String("request_id", requestID.(string)),
+                        slog.Any("error", err),
+                )
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "error":      "invalid request",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">if req.Type == "" </span><span class="cov0" title="0">{
+                req.Type = "dir"
+        }</span>
+        <span class="cov0" title="0">if req.Path == "" </span><span class="cov0" title="0">{
+                req.Path = "/var/lib/libvirt/images"
+        }</span>
+        <span class="cov0" title="0">if req.Capacity == 0 </span><span class="cov0" title="0">{
+                req.Capacity = 107374182400
+        }</span>
+
+        <span class="cov0" title="0">pool := &amp;StoragePool{
+                ID:       uuid.New().String(),
+                Name:     req.Name,
+                Type:     req.Type,
+                Path:     req.Path,
+                Active:   true,
+                Capacity: req.Capacity,
+        }
+
+        h.mu.Lock()
+        h.pools[pool.ID] = pool
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "created storage pool",
+                slog.String("request_id", requestID.(string)),
+                slog.String("pool_id", pool.ID),
+                slog.String("name", pool.Name),
+        )
+
+        c.JSON(http.StatusCreated, pool)</span>
+}
+
+func (h *StorageHandler) Get(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.RLock()
+        pool, exists := h.pools[id]
+        h.mu.RUnlock()
+
+        if !exists </span><span class="cov0" title="0">{
+                slog.WarnContext(c.Request.Context(), "storage pool not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("pool_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "storage pool not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, pool)</span>
+}
+
+func (h *StorageHandler) Delete(c *gin.Context) <span class="cov0" title="0">{
+        requestID, _ := c.Get("request_id")
+        id := c.Param("id")
+
+        h.mu.Lock()
+        _, exists := h.pools[id]
+        if !exists </span><span class="cov0" title="0">{
+                h.mu.Unlock()
+                slog.WarnContext(c.Request.Context(), "storage pool not found",
+                        slog.String("request_id", requestID.(string)),
+                        slog.String("pool_id", id),
+                )
+                c.JSON(http.StatusNotFound, gin.H{
+                        "error":      "storage pool not found",
+                        "request_id": requestID,
+                })
+                return
+        }</span>
+        <span class="cov0" title="0">delete(h.pools, id)
+        h.mu.Unlock()
+
+        slog.InfoContext(c.Request.Context(), "deleted storage pool",
+                slog.String("request_id", requestID.(string)),
+                slog.String("pool_id", id),
+        )
+
+        c.JSON(http.StatusOK, gin.H{
+                "message": "storage pool deleted",
+        })</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

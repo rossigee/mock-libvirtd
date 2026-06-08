@@ -1,0 +1,50 @@
+=== COVERAGE ANALYSIS: mock-libvirtd ===
+
+Overall Coverage: 20.2% (BELOW target of 70%)
+
+COVERED FUNCTIONS (9):
+✅ domains.List (87.5%)        - Lists all domains
+✅ domains.Create (68.8%)      - Creates new domain
+✅ domains.NewDomainHandler (100%)
+✅ networks.List (87.5%)       - Lists all networks
+✅ networks.NewNetworkHandler (100%)
+✅ storage.List (87.5%)        - Lists all storage pools
+✅ storage.NewStorageHandler (100%)
+
+UNTESTED FUNCTIONS (15):
+❌ domains.Get (0%)            - Retrieve single domain
+❌ domains.Update (0%)         - Update domain state/resources
+❌ domains.Delete (0%)         - Delete domain
+❌ health.Health (0%)          - Liveness probe endpoint
+❌ health.Ready (0%)           - Readiness probe endpoint
+❌ health.NewHealthHandler (0%)
+❌ networks.Create (0%)        - Create network
+❌ networks.Get (0%)           - Retrieve single network
+❌ networks.Delete (0%)        - Delete network
+❌ storage.Create (0%)         - Create storage pool
+❌ storage.Get (0%)            - Retrieve single storage pool
+❌ storage.Delete (0%)         - Delete storage pool
+
+MIDDLEWARE (0% - not in test scope):
+- RequestID middleware
+- StructuredLogging middleware
+- CORSMiddleware
+- InputValidation middleware
+
+MAIN ENTRY POINT (not tested):
+- main.go setup and routing
+
+GAP ANALYSIS:
+- Missing 15 handler functions (tests for Create, Get, Update, Delete for all 3 resources)
+- No health check endpoint tests
+- No error cases tested (validation failures, not found, conflicts)
+- No middleware tests
+- No integration tests
+
+PRIORITY FIXES (to reach 70%+ coverage):
+1. Add tests for domains.Get, domains.Update, domains.Delete
+2. Add tests for networks.Create, networks.Get, networks.Delete
+3. Add tests for storage.Create, storage.Get, storage.Delete
+4. Add health endpoint tests
+5. Add error case tests (invalid input, not found)
+6. Add middleware unit tests (optional, but recommended)
