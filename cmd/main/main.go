@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rossigee/mock-libvirtd/internal/handler"
@@ -83,9 +88,39 @@ func main() {
 		port = "8080"
 	}
 
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
+	}
+
 	slog.Info("starting mock-libvirtd", slog.String("port", port))
-	if err := router.Run(":" + port); err != nil {
-		slog.Error("failed to start server", slog.Any("error", err))
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", slog.Any("error", err))
+			os.Exit(1)
+		}
+	}()
+
+	// Mark service as ready (after server is running)
+	health.MarkReady()
+	slog.Info("service ready")
+
+	// Wait for signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+	slog.Info("shutting down")
+	shutdownErr := srv.Shutdown(ctx)
+	cancel()
+
+	if shutdownErr != nil {
+		slog.Error("shutdown error", slog.Any("error", shutdownErr))
 		os.Exit(1)
 	}
+
+	slog.Info("shutdown complete")
 }

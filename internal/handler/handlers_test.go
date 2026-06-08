@@ -330,6 +330,7 @@ func TestReady(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := NewHealthHandler()
 
+	// Should be unavailable initially
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/ready", nil)
 	c, _ := gin.CreateTestContext(w)
@@ -337,8 +338,21 @@ func TestReady(t *testing.T) {
 
 	h.Ready(c)
 
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d before MarkReady, got %d", http.StatusServiceUnavailable, w.Code)
+	}
+
+	// Should be ready after MarkReady
+	h.MarkReady()
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("GET", "/ready", nil)
+	c, _ = gin.CreateTestContext(w)
+	c.Request = r
+
+	h.Ready(c)
+
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Fatalf("expected status %d after MarkReady, got %d", http.StatusOK, w.Code)
 	}
 }
 
