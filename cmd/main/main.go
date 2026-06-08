@@ -1,3 +1,4 @@
+// Mock libvirtd service for E2E testing.
 package main
 
 import (
