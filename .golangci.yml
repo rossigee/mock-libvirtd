@@ -12,12 +12,13 @@ linters:
     - unused
     - gosimple
     - ineffassign
-    - typecheck
     - gofmt
     - goimports
     - misspell
     - gocritic
     - revive
+    - gochecknoinits
+    - gocheckcompilerdirectives
 
 linters-settings:
   goimports:
