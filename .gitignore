@@ -1,0 +1,24 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+*.test
+*.out
+coverage.out
+dist/
+bin/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+mock-libvirtd
+app
