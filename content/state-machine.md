@@ -6,7 +6,7 @@ The mock libvirtd service simulates realistic domain (VM) lifecycle management t
 
 ## State Diagram
 
-```mermaid
+{{< mermaid >}}
 stateDiagram-v2
     [*] --> shutoff
     shutoff --> starting : request running
@@ -27,7 +27,7 @@ stateDiagram-v2
         - cpu_usage: ramps 10→40%
         - mem_usage: ramps 20→60%
     end note
-```
+{{< /mermaid >}}
 
 ## State Definitions
 

@@ -25,3 +25,7 @@ bin/
 mock-libvirtd
 app
 main
+
+# Hugo
+public/
+.hugo_build.lock

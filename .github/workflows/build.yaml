@@ -23,7 +23,7 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.0
+          version: v2.12.2
 
       - run: go test -v -race -coverprofile=coverage.out ./...
 
