@@ -2,6 +2,11 @@ baseURL: https://rossigee.github.io/mock-libvirtd/
 languageCode: en-us
 title: Mock Libvirtd
 
+sitemap:
+  changefreq: monthly
+  filename: sitemap.xml
+  priority: 0.5
+
 markup:
   goldmark:
     renderer:
