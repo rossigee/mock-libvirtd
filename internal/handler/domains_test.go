@@ -307,8 +307,8 @@ func TestDomainDeleteNotFound(t *testing.T) {
 
 func TestDomainCreateTooMany(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	os.Setenv("MAX_DOMAINS", "2")
-	defer os.Unsetenv("MAX_DOMAINS")
+	_ = os.Setenv("MAX_DOMAINS", "2")
+	defer func() { _ = os.Unsetenv("MAX_DOMAINS") }()
 
 	h := NewDomainHandler()
 
@@ -488,7 +488,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Create(c)
 
 	var domain Domain
-	json.Unmarshal(w.Body.Bytes(), &domain)
+	_ = json.Unmarshal(w.Body.Bytes(), &domain)
 	domainID := domain.ID
 
 	if domain.State != "shutoff" {
@@ -508,7 +508,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Update(c)
 
 	var updated Domain
-	json.Unmarshal(w.Body.Bytes(), &updated)
+	_ = json.Unmarshal(w.Body.Bytes(), &updated)
 	if updated.State != "running" {
 		t.Fatalf("expected state running (desired), got %s", updated.State)
 	}
@@ -523,7 +523,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Get(c)
 
 	var running Domain
-	json.Unmarshal(w.Body.Bytes(), &running)
+	_ = json.Unmarshal(w.Body.Bytes(), &running)
 	if running.State != "running" {
 		t.Fatalf("expected state running after boot, got %s", running.State)
 	}
@@ -547,7 +547,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Update(c)
 
 	var paused Domain
-	json.Unmarshal(w.Body.Bytes(), &paused)
+	_ = json.Unmarshal(w.Body.Bytes(), &paused)
 	if paused.State != "paused" {
 		t.Fatalf("expected state paused, got %s", paused.State)
 	}
@@ -562,7 +562,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Get(c)
 
 	var stillPaused Domain
-	json.Unmarshal(w.Body.Bytes(), &stillPaused)
+	_ = json.Unmarshal(w.Body.Bytes(), &stillPaused)
 	if stillPaused.State != "paused" {
 		t.Fatalf("expected state still paused, got %s", stillPaused.State)
 	}
@@ -592,7 +592,7 @@ func TestStateMachineTransitions(t *testing.T) {
 	h.Get(c)
 
 	var shutoff Domain
-	json.Unmarshal(w.Body.Bytes(), &shutoff)
+	_ = json.Unmarshal(w.Body.Bytes(), &shutoff)
 	if shutoff.State != "shutoff" {
 		t.Fatalf("expected state shutoff, got %s", shutoff.State)
 	}
@@ -617,7 +617,7 @@ func TestInvalidStateTransition(t *testing.T) {
 	h.Create(c)
 
 	var domain Domain
-	json.Unmarshal(w.Body.Bytes(), &domain)
+	_ = json.Unmarshal(w.Body.Bytes(), &domain)
 	domainID := domain.ID
 
 	updateReq := struct {
@@ -637,7 +637,7 @@ func TestInvalidStateTransition(t *testing.T) {
 	}
 
 	var errResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &errResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &errResp)
 	if errResp["error"] != "invalid state transition" {
 		t.Fatalf("expected error message about invalid transition, got: %v", errResp["error"])
 	}
@@ -661,7 +661,7 @@ func TestConcurrentDomains(t *testing.T) {
 		h.Create(c)
 
 		var domain Domain
-		json.Unmarshal(w.Body.Bytes(), &domain)
+		_ = json.Unmarshal(w.Body.Bytes(), &domain)
 		domainIDs[i] = domain.ID
 	}
 
@@ -695,7 +695,7 @@ func TestConcurrentDomains(t *testing.T) {
 		h.Get(c)
 
 		var domain Domain
-		json.Unmarshal(w.Body.Bytes(), &domain)
+		_ = json.Unmarshal(w.Body.Bytes(), &domain)
 		if domain.State != "running" {
 			t.Fatalf("domain %d: expected running, got %s", i, domain.State)
 		}
@@ -718,7 +718,7 @@ func TestConcurrentDomains(t *testing.T) {
 	h.List(c)
 
 	var listResp map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &listResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &listResp)
 	domains := listResp["data"].([]interface{})
 	if len(domains) != 3 {
 		t.Fatalf("expected 3 domains, got %d", len(domains))
@@ -741,7 +741,7 @@ func TestMetricsProgression(t *testing.T) {
 	h.Create(c)
 
 	var domain Domain
-	json.Unmarshal(w.Body.Bytes(), &domain)
+	_ = json.Unmarshal(w.Body.Bytes(), &domain)
 	domainID := domain.ID
 
 	updateReq := struct {
@@ -767,7 +767,7 @@ func TestMetricsProgression(t *testing.T) {
 	h.Get(c)
 
 	var running1 Domain
-	json.Unmarshal(w.Body.Bytes(), &running1)
+	_ = json.Unmarshal(w.Body.Bytes(), &running1)
 	uptime1 := running1.Uptime
 	cpu1 := running1.CPUUsage
 	mem1 := running1.MemUsage
@@ -783,7 +783,7 @@ func TestMetricsProgression(t *testing.T) {
 	h.Get(c)
 
 	var running2 Domain
-	json.Unmarshal(w.Body.Bytes(), &running2)
+	_ = json.Unmarshal(w.Body.Bytes(), &running2)
 	uptime2 := running2.Uptime
 	cpu2 := running2.CPUUsage
 	mem2 := running2.MemUsage
