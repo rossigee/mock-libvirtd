@@ -1,0 +1,637 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mock Libvirtd API",
+    "description": "A mock libvirtd service for E2E testing of libvirt-based applications without requiring actual hypervisor infrastructure.",
+    "version": "0.2.0",
+    "contact": {
+      "name": "Rossigee",
+      "url": "https://github.com/rossigee/mock-libvirtd"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Home page",
+        "description": "HTML page with live stats dashboard",
+        "operationId": "getHome",
+        "responses": {
+          "200": {
+            "description": "HTML page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Liveness probe",
+        "description": "Always returns 200 to indicate the service is alive",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "alive" },
+                    "timestamp": { "type": "integer", "example": 1699999999 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness probe",
+        "description": "Returns 200 when service is ready to accept requests",
+        "operationId": "getReady",
+        "responses": {
+          "200": {
+            "description": "Service is ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ready" },
+                    "timestamp": { "type": "integer", "example": 1699999999 }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is initializing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "initializing" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "summary": "Get service statistics",
+        "description": "Returns current counts of resources and uptime",
+        "operationId": "getStats",
+        "responses": {
+          "200": {
+            "description": "Stats object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "domains": { "type": "integer", "example": 5 },
+                    "networks": { "type": "integer", "example": 2 },
+                    "storage_pools": { "type": "integer", "example": 3 },
+                    "volumes": { "type": "integer", "example": 10 },
+                    "uptime_sec": { "type": "integer", "example": 3600 },
+                    "max_domains": { "type": "integer", "example": 1000 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loglevel": {
+      "get": {
+        "summary": "Get current log level",
+        "operationId": "getLogLevel",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "level": { "type": "string", "example": "info" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Set log level",
+        "operationId": "setLogLevel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["level"],
+                "properties": {
+                  "level": {
+                    "type": "string",
+                    "enum": ["debug", "info", "warn", "error"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Log level updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "level": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/domains": {
+      "get": {
+        "summary": "List all domains",
+        "operationId": "listDomains",
+        "responses": {
+          "200": {
+            "description": "List of domains",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Domain" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new domain",
+        "operationId": "createDomain",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "test-vm" },
+                  "memory": { "type": "integer", "example": 1024 },
+                  "cpus": { "type": "integer", "example": 2 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Domain created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Domain" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "503": {
+            "description": "Domain limit reached"
+          }
+        }
+      }
+    },
+    "/api/domains/{id}": {
+      "get": {
+        "summary": "Get domain by ID",
+        "operationId": "getDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Domain" }
+              }
+            }
+          },
+          "404": {
+            "description": "Domain not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update domain",
+        "operationId": "updateDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": ["running", "paused", "shutoff"]
+                  },
+                  "memory": { "type": "integer" },
+                  "cpus": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Domain updated"
+          },
+          "404": {
+            "description": "Domain not found"
+          },
+          "409": {
+            "description": "Invalid state transition"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete domain",
+        "operationId": "deleteDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain deleted"
+          },
+          "404": {
+            "description": "Domain not found"
+          }
+        }
+      }
+    },
+    "/api/networks": {
+      "get": {
+        "summary": "List all networks",
+        "operationId": "listNetworks",
+        "responses": {
+          "200": {
+            "description": "List of networks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Network" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new network",
+        "operationId": "createNetwork",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "test-network" },
+                  "bridge": { "type": "string", "example": "virbr0" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Network created"
+          }
+        }
+      }
+    },
+    "/api/networks/{id}": {
+      "get": {
+        "summary": "Get network by ID",
+        "operationId": "getNetwork",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network details"
+          },
+          "404": {
+            "description": "Network not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete network",
+        "operationId": "deleteNetwork",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network deleted"
+          }
+        }
+      }
+    },
+    "/api/storage": {
+      "get": {
+        "summary": "List all storage pools",
+        "operationId": "listStorage",
+        "responses": {
+          "200": {
+            "description": "List of storage pools"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new storage pool",
+        "operationId": "createStorage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "test-pool" },
+                  "type": { "type": "string", "example": "dir" },
+                  "path": { "type": "string", "example": "/var/lib/libvirt/images" },
+                  "capacity": { "type": "integer", "example": 107374182400 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Storage pool created"
+          }
+        }
+      }
+    },
+    "/api/storage/{id}": {
+      "get": {
+        "summary": "Get storage pool by ID",
+        "operationId": "getStorage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Storage pool details"
+          },
+          "404": {
+            "description": "Storage pool not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete storage pool",
+        "operationId": "deleteStorage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Storage pool deleted"
+          }
+        }
+      }
+    },
+    "/api/storage/{pool_id}/volumes": {
+      "get": {
+        "summary": "List volumes in a storage pool",
+        "operationId": "listVolumes",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of volumes"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new volume",
+        "operationId": "createVolume",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "size"],
+                "properties": {
+                  "name": { "type": "string", "example": "disk.qcow2" },
+                  "size": { "type": "integer", "example": 10737418240 },
+                  "type": { "type": "string", "example": "file" },
+                  "format": { "type": "string", "example": "qcow2" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Volume created"
+          }
+        }
+      }
+    },
+    "/api/storage/{pool_id}/volumes/{volume_id}": {
+      "get": {
+        "summary": "Get volume by ID",
+        "operationId": "getVolume",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "volume_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Volume details"
+          },
+          "404": {
+            "description": "Volume not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete volume",
+        "operationId": "deleteVolume",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "volume_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Volume deleted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Domain": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "name": { "type": "string", "example": "test-vm" },
+          "state": { "type": "string", "example": "running" },
+          "memory": { "type": "integer", "example": 1024 },
+          "cpus": { "type": "integer", "example": 2 },
+          "created_at": { "type": "integer", "example": 1699999999000 },
+          "started_at": { "type": "integer", "example": 1699999999000 },
+          "uptime": { "type": "integer", "example": 3600 },
+          "cpu_usage": { "type": "number", "example": 25.5 },
+          "mem_usage": { "type": "number", "example": 45.2 }
+        }
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "name": { "type": "string", "example": "test-network" },
+          "bridge": { "type": "string", "example": "virbr0" },
+          "active": { "type": "boolean", "example": true }
+        }
+      },
+      "StoragePool": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "name": { "type": "string", "example": "test-pool" },
+          "type": { "type": "string", "example": "dir" },
+          "path": { "type": "string", "example": "/var/lib/libvirt/images" },
+          "active": { "type": "boolean", "example": true },
+          "capacity": { "type": "integer", "example": 107374182400 }
+        }
+      }
+    }
+  }
+}

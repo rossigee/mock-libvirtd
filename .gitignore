@@ -8,6 +8,8 @@
 *.test
 *.out
 coverage.out
+coverage.html
+coverage_analysis.txt
 dist/
 bin/
 

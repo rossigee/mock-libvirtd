@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: mock-libvirtd
   namespace: mock-services
+  annotations:
+    kubernetes.io/description: "Mock libvirtd service for E2E testing of libvirt-based applications"
 spec:
   type: ClusterIP
   ports:
@@ -17,6 +19,8 @@ kind: Deployment
 metadata:
   name: mock-libvirtd
   namespace: mock-services
+  annotations:
+    kubernetes.io/description: "Mock libvirtd service for E2E testing of libvirt-based applications"
   labels:
     managed-by: mock-servers
 spec:
@@ -26,6 +30,8 @@ spec:
       app: mock-libvirtd
   template:
     metadata:
+      annotations:
+        kubernetes.io/description: "Mock libvirtd service for E2E testing of libvirt-based applications"
       labels:
         app: mock-libvirtd
     spec:

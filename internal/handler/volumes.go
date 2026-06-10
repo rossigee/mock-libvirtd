@@ -3,11 +3,19 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+func sanitizeVolumeName(name string) string {
+	name = strings.ReplaceAll(name, "..", "")
+	name = strings.ReplaceAll(name, "/", "")
+	name = strings.ReplaceAll(name, "\\", "")
+	return strings.TrimSpace(name)
+}
 
 type StorageVolume struct {
 	ID           string `json:"id"`
@@ -80,6 +88,28 @@ func (h *VolumeHandler) Create(c *gin.Context) {
 		return
 	}
 
+	sanitizedName := sanitizeVolumeName(req.Name)
+	if sanitizedName == "" {
+		slog.WarnContext(c.Request.Context(), "invalid volume name",
+			slog.String("request_id", requestID.(string)),
+			slog.String("pool_id", poolID),
+			slog.String("name", req.Name),
+		)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "invalid volume name",
+			"request_id": requestID,
+		})
+		return
+	}
+
+	if req.Size <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "size must be positive",
+			"request_id": requestID,
+		})
+		return
+	}
+
 	if req.Type == "" {
 		req.Type = "file"
 	}
@@ -89,11 +119,11 @@ func (h *VolumeHandler) Create(c *gin.Context) {
 
 	volume := &StorageVolume{
 		ID:           uuid.New().String(),
-		Name:         req.Name,
+		Name:         sanitizedName,
 		PoolID:       poolID,
 		Type:         req.Type,
 		Size:         req.Size,
-		Path:         "/var/lib/libvirt/images/" + req.Name,
+		Path:         "/var/lib/libvirt/images/" + sanitizedName,
 		Format:       req.Format,
 		BackingStore: req.BackingStore,
 	}
@@ -170,4 +200,10 @@ func (h *VolumeHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "volume deleted",
 	})
+}
+
+func (h *VolumeHandler) Count() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.volumes)
 }

@@ -10,6 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	maxNetworks = 100
+)
+
 type Network struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
@@ -65,6 +69,25 @@ func (h *NetworkHandler) Create(c *gin.Context) {
 		})
 		return
 	}
+
+	if len(req.Name) == 0 || len(req.Name) > maxNameLength {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "name must be 1-255 characters",
+			"request_id": requestID,
+		})
+		return
+	}
+
+	h.mu.Lock()
+	if len(h.networks) >= maxNetworks {
+		h.mu.Unlock()
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":      "network limit reached",
+			"request_id": requestID,
+		})
+		return
+	}
+	h.mu.Unlock()
 
 	if req.Bridge == "" {
 		req.Bridge = "virbr0"
@@ -142,4 +165,10 @@ func (h *NetworkHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "network deleted",
 	})
+}
+
+func (h *NetworkHandler) Count() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.networks)
 }

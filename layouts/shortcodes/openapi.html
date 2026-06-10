@@ -1,0 +1,29 @@
+<!-- OpenAPI Shortcode: Embeds OpenAPI spec with Redoc -->
+<link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  .redoc-wrap {
+    height: 100vh;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"></script>
+<script>
+  Redoc.init(
+    '{{ .Get "url" }}',
+    {
+      theme: {
+        colors: {
+          primary: {
+            main: '#0066cc'
+          }
+        }
+      }
+    },
+    document.getElementById('redoc-container')
+  );
+</script>
+<div id="redoc-container"></div>

@@ -1,0 +1,36 @@
+{{ define "main" }}
+{{ .Content }}
+
+<section>
+  <h2>Quick Links</h2>
+  <nav>
+    <ul>
+      <li><a href="{{ "getting-started/" | relURL }}">Getting Started →</a></li>
+      <li><a href="{{ "configuration/" | relURL }}">Configuration →</a></li>
+      <li><a href="{{ "reference/" | relURL }}">API Reference →</a></li>
+      <li><a href="{{ "state-machine/" | relURL }}">State Machine →</a></li>
+    </ul>
+  </nav>
+</section>
+
+<section>
+  <h2>API Documentation</h2>
+  <nav>
+    <ul>
+      <li><a href="{{ "api/domains/" | relURL }}">Domains API</a></li>
+      <li><a href="{{ "api/networks/" | relURL }}">Networks API</a></li>
+      <li><a href="{{ "api/storage/" | relURL }}">Storage Pools API</a></li>
+      <li><a href="{{ "api/volumes/" | relURL }}">Volumes API</a></li>
+    </ul>
+  </nav>
+</section>
+
+<section>
+  <h2>Resources</h2>
+  <nav>
+    <ul>
+      <li><a href="{{ "openapi.yaml" | relURL }}">OpenAPI Specification (YAML)</a></li>
+    </ul>
+  </nav>
+</section>
+{{ end }}

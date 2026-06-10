@@ -1,16 +1,36 @@
-//nolint:errcheck,dupl // Mock service ignores UUID and JSON unmarshal errors; similar CRUD handlers across resource types
 package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+func getEnvDuration(key string, def time.Duration) time.Duration {
+	if s := os.Getenv(key); s != "" {
+		if ms, err := strconv.Atoi(s); err == nil {
+			return time.Duration(ms) * time.Millisecond
+		}
+	}
+	return def
+}
+
+func getEnvInt(key string, def int) int {
+	if s := os.Getenv(key); s != "" {
+		if v, err := strconv.Atoi(s); err == nil {
+			return v
+		}
+	}
+	return def
+}
 
 type Domain struct {
 	ID        string  `json:"id"`
@@ -35,10 +55,34 @@ type DomainHandler struct {
 	mu      sync.RWMutex
 }
 
-const (
-	bootTime      = 1500 * time.Millisecond
-	stateTickRate = 100 * time.Millisecond
+func (h *DomainHandler) Shutdown() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for _, d := range h.domains {
+		if d.cancelFunc != nil {
+			d.cancelFunc()
+		}
+	}
+}
+
+func (h *DomainHandler) Count() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.domains)
+}
+
+var (
+	stateTickRate = getEnvDuration("STATE_TICK_RATE_MS", 100*time.Millisecond)
+	maxMemoryMB   = getEnvInt("MAX_MEMORY_MB", 1048576)
+	maxCPUs       = getEnvInt("MAX_CPUS", 256)
+	minMemoryMB   = getEnvInt("MIN_MEMORY_MB", 128)
+	minCPUs       = getEnvInt("MIN_CPUS", 1)
+	maxNameLength = getEnvInt("MAX_NAME_LENGTH", 255)
 )
+
+func getMaxDomains() int {
+	return getEnvInt("MAX_DOMAINS", 1000)
+}
 
 var validTransitions = map[string]map[string]bool{
 	"shutoff":  {"running": true},
@@ -54,13 +98,17 @@ func NewDomainHandler() *DomainHandler {
 	}
 }
 
-func (d *Domain) canTransitionTo(nextState string) bool {
-	d.mu.RLock()
-	current := d.State
-	d.mu.RUnlock()
+func (d *Domain) trySetDesiredState(nextState string) (string, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
+	current := d.State
 	allowed, exists := validTransitions[current]
-	return exists && allowed[nextState]
+	if !exists || !allowed[nextState] {
+		return current, false
+	}
+	d.desiredState = nextState
+	return current, true
 }
 
 func (d *Domain) updateMetrics() {
@@ -233,11 +281,48 @@ func (h *DomainHandler) Create(c *gin.Context) {
 		return
 	}
 
+	if len(req.Name) == 0 || len(req.Name) > maxNameLength {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "name must be 1-255 characters",
+			"request_id": requestID,
+		})
+		return
+	}
+
+	h.mu.Lock()
+	if len(h.domains) >= getMaxDomains() {
+		h.mu.Unlock()
+		slog.WarnContext(c.Request.Context(), "domain limit reached",
+			slog.String("request_id", requestID.(string)),
+		)
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":      "domain limit reached",
+			"request_id": requestID,
+		})
+		return
+	}
+	h.mu.Unlock()
+
 	if req.Memory == 0 {
 		req.Memory = 512
 	}
 	if req.CPUs == 0 {
 		req.CPUs = 1
+	}
+
+	if req.Memory < minMemoryMB || req.Memory > maxMemoryMB {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      fmt.Sprintf("memory must be between %d and %d MB", minMemoryMB, maxMemoryMB),
+			"request_id": requestID,
+		})
+		return
+	}
+	if req.CPUs < minCPUs || req.CPUs > maxCPUs {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      fmt.Sprintf("CPUs must be between %d and %d", minCPUs, maxCPUs),
+			"request_id": requestID,
+		})
+		return
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -334,10 +419,8 @@ func (h *DomainHandler) Update(c *gin.Context) {
 
 	var responseState string
 	if req.State != "" {
-		if !domain.canTransitionTo(req.State) {
-			domain.mu.RLock()
-			currentState := domain.State
-			domain.mu.RUnlock()
+		currentState, ok := domain.trySetDesiredState(req.State)
+		if !ok {
 			slog.WarnContext(c.Request.Context(), "invalid state transition",
 				slog.String("request_id", requestID.(string)),
 				slog.String("domain_id", id),
@@ -352,10 +435,7 @@ func (h *DomainHandler) Update(c *gin.Context) {
 			})
 			return
 		}
-		domain.mu.Lock()
-		domain.desiredState = req.State
 		responseState = req.State
-		domain.mu.Unlock()
 	}
 
 	if req.Memory > 0 {
