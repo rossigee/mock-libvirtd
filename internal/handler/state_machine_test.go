@@ -1,3 +1,4 @@
+//nolint:errcheck // Test file ignores JSON unmarshal errors for brevity
 package handler
 
 import (

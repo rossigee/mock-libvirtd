@@ -143,12 +143,13 @@ func (d *Domain) runStateMachine(ctx context.Context) {
 				}
 
 			case "running":
-				if desired == "shutoff" {
+				switch desired {
+				case "shutoff":
 					d.mu.Lock()
 					d.State = "stopping"
 					d.mu.Unlock()
 					slog.Info("domain transitioned", slog.String("domain", d.ID), slog.String("state", "stopping"))
-				} else if desired == "paused" {
+				case "paused":
 					d.mu.Lock()
 					d.State = "paused"
 					d.mu.Unlock()
@@ -156,12 +157,13 @@ func (d *Domain) runStateMachine(ctx context.Context) {
 				}
 
 			case "paused":
-				if desired == "running" {
+				switch desired {
+				case "running":
 					d.mu.Lock()
 					d.State = "running"
 					d.mu.Unlock()
 					slog.Info("domain transitioned", slog.String("domain", d.ID), slog.String("state", "running"))
-				} else if desired == "shutoff" {
+				case "shutoff":
 					d.mu.Lock()
 					d.State = "stopping"
 					d.mu.Unlock()
@@ -241,14 +243,14 @@ func (h *DomainHandler) Create(c *gin.Context) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	domain := &Domain{
-		ID:           uuid.New().String(),
-		Name:         req.Name,
-		State:        "shutoff",
-		Memory:       req.Memory,
-		CPUs:         req.CPUs,
-		CreatedAt:    time.Now().UnixMilli(),
-		desiredState: "shutoff",
-		cancelFunc:   cancel,
+		ID:            uuid.New().String(),
+		Name:          req.Name,
+		State:         "shutoff",
+		Memory:        req.Memory,
+		CPUs:          req.CPUs,
+		CreatedAt:     time.Now().UnixMilli(),
+		desiredState:  "running",
+		cancelFunc:    cancel,
 		stateUpdateCh: make(chan struct{}, 1),
 	}
 
